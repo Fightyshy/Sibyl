@@ -268,7 +268,10 @@ public class SimulationEnviroment extends JFrame {
 						mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 						//mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone);
 
-						/*Because of ConcurrentModificationException (I.E. using the same "thread" to add(because of CriminalEntity() a
+						/*"Arresting protocol. Iterates through criminalList to see if one of their coordinates matches the current location of a drone, and if so, deletes.
+						 * "Should also take crime-coefficient from criminal"
+						 * 
+						 * Because of ConcurrentModificationException (I.E. using the same "thread" to add(because of CriminalEntity() a
 						 * random criminal every five seconds, usage of an iterator manage the thread to allow removing here has been used.
 						 * Code taken and adapted from 
 						 * http://stackoverflow.com/questions/223918/iterating-through-a-list-avoiding-concurrentmodificationexception-when-removing
@@ -303,16 +306,18 @@ public class SimulationEnviroment extends JFrame {
 						System.out.println("");
 						//break;
 						
-	                    if (nextRow >= 0 && nextRow < 11 && nextCol >= 0 && nextCol < 11 && mapArrayPosition[nextCol][nextRow] != 1) {
+						//Checks if next movement is within grid, and if the position is a building or not.
+	                    if (nextRow >= 0 && nextRow < 12 && nextCol >= 0 && nextCol < 12 && mapArrayPosition[nextCol][nextRow] != 1) {
 	                        row = nextRow;
 	                        col = nextCol;
 	                        moved = true;
 	                    }
 	                    
-	                    drone.setPositionX(nextRow);
-	                    drone.setPositionY(nextCol);
-	                    //mapArray[nextCol][nextRow].add(drone);
-	                    mapArray[nextCol][nextRow].add(drone.getDroneShape());
+	                    if(row != -1 || row != 12 || col != -1 || col != 12)
+		                    drone.setPositionX(row);
+		                    drone.setPositionY(col);
+		                    //mapArray[nextCol][nextRow].add(drone);
+		                    mapArray[col][row].add(drone.getDroneShape());
 					}while(!moved);
 					//System.out.println(drone.getLocation());
 			}
