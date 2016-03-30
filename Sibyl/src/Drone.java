@@ -10,11 +10,12 @@ class Drone extends JPanel{
 	public int droneDesignation; //Designation of drone.
 	public int detectionRadius; //set radius for each Drone's detection, currently set to ints. Can be doubles depending on grid layout
 	public boolean hasCriminal; //Checks if Criminal is currently being held.
-	public int positionX;
-	public int positionY;
-	public Tiles droneShape = new Tiles(true, true, Color.red, 24);
+	public int positionX; //X coord position
+	public int positionY; //Y coord position
+	public int order; // Sets order to follow
+	public Tiles droneShape = new Tiles(true, true, Color.red, 24); //Set tile parameters.
 	
-	//Instantiate
+	//Clear
 	public Drone(){
 	}
 	
@@ -26,9 +27,10 @@ class Drone extends JPanel{
 		positionX = posX;
 		positionX = posY;
 		droneShape = ds;
+		this.order = order;
 	}
 	
-	//Value setting block
+	//Setters and getters
 	public void setDroneDesignation(int id){
 		droneDesignation = id;
 	}
@@ -41,7 +43,6 @@ class Drone extends JPanel{
 		detectionRadius = detRad;
 	}
 	
-	//Value getting block
 	public int getDetectionRadius(){
 		return detectionRadius;
 	}
@@ -78,26 +79,11 @@ class Drone extends JPanel{
 		return droneShape;
 	}
 	
-	/*Methods below
-	 * One for movement/casual patrol
-	 * One for detection
-	 * One for intercepting
-	 * One for apprehending and returning to base
-	 */
-	
-	public void movementPatrol(Graphics g){
-		
+	public void setOrder(int order){
+		this.order = order;
 	}
 	
-	public void movementIntercept(){
-		
-	}
-	
-	public void detection(){
-		
-	}
-	
-	public void arrestAndReturn(){
-		
+	public int getOrder(){
+		return this.order;
 	}
 }
