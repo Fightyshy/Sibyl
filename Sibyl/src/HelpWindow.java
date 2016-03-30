@@ -9,6 +9,7 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 
+@SuppressWarnings("serial")
 public class HelpWindow extends JFrame {
 	public HelpWindow() {
 		setTitle("\"Sibyl\" - Intelligent Policing System - Help Documentation");

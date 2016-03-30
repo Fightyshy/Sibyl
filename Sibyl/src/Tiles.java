@@ -2,7 +2,6 @@ import java.awt.Color;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
-import javax.swing.SwingConstants;
 
 @SuppressWarnings("serial")
 class Tiles extends JPanel{

@@ -1,5 +1,4 @@
 import java.awt.Color;
-import java.awt.Graphics;
 
 import javax.swing.JPanel;
 
@@ -20,7 +19,7 @@ class Drone extends JPanel{
 	}
 	
 	//Initialise
-	public Drone(int id, int detRad, boolean hasCrim, int posX, int posY, Tiles ds){
+	public Drone(int id, int detRad, boolean hasCrim, int posX, int posY, Tiles ds, int order){
 		droneDesignation = id;
 		detectionRadius = detRad;
 		hasCriminal = hasCrim;
