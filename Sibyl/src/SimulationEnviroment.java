@@ -159,7 +159,6 @@ public class SimulationEnviroment extends JFrame {
 	//Mechanism for Criminals
 	public void criminalEntity(){
 		criminal = new Criminal();
-		criminalList.add(criminal);
 		//random map location
 		int randCrimPosX = randCrim.nextInt((11 - 0)) + 0;
 		int randCrimPosY = randCrim.nextInt((11 - 0)) + 0;
@@ -172,7 +171,7 @@ public class SimulationEnviroment extends JFrame {
 			
 			criminal.setPositionX(randCrimPosX);
 			criminal.setPositionY(randCrimPosY);
-			
+			criminal.setTaggedBy(-1);
 			spawn = mapArrayPosition[criminal.getPositionY()][criminal.getPositionX()];
 		
 			//Check for duplicate criminal on square not needed - Multiple crimes/severity can occur on same square.
@@ -189,21 +188,21 @@ public class SimulationEnviroment extends JFrame {
 				criminal.setPositionX(randCrimPosX);
 				criminal.setPositionY(randCrimPosY);
 			}
-			else{
-				if(gridCheck == true){
-				mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal.getCriminalShape());
-				mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal);
-				getContentPane().add(criminal);
-				setVisible(true);
-				}
-				else{
-					System.out.println("No");
-					System.out.println(criminal.getPositionX());
-					System.out.println(criminal.getPositionY());
-				}
-				break;
+		else{
+			if(gridCheck == true){
+			mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal.getCriminalShape());
+			mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal);
+			getContentPane().add(criminal);
+			criminalList.add(criminal);
+			setVisible(true);
 			}
-		criminal.setTaggedBy(-1);
+			else{
+				System.out.println("No");
+				System.out.println(criminal.getPositionX());
+				System.out.println(criminal.getPositionY());
+			}
+			break;
+		}
 		
 		}while(spawn == 1);
 	}
@@ -367,31 +366,30 @@ public class SimulationEnviroment extends JFrame {
 				//Execute path searching to the first-detected criminal, resume standard if absolutely no more criminals in detection radius
 				//Sets to return to home base, will always have "arrested" at the end of this order.
 				int listCount = 0;
-				//boolean arrived = false;
+				boolean moved = false;
 
 				for(Criminal crim: criminalList){
 					if(drone.getDroneDesignation() == crim.getTaggedBy()){
 						taggedCrim = crim;
-						break;
 					}
 				}
 				
-				pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), taggedCrim.getPositionX(), taggedCrim.getPositionY());
-				
+				pathList = pathfinder(row, col, taggedCrim.getPositionX(), taggedCrim.getPositionY());
 				while((!((drone.getPositionX() == taggedCrim.getPositionX()) && (drone.getPositionY() == taggedCrim.getPositionY())))){
 					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 					
 					System.out.println(pathList.get(listCount).xCoord+ " "+pathList.get(listCount).yCoord );
-					drone.setPositionX(pathList.get(listCount).xCoord);
-					drone.setPositionY(pathList.get(listCount).yCoord);
+					//drone.setPositionX(pathList.get(listCount).xCoord);
+					//drone.setPositionY(pathList.get(listCount).yCoord);
 					
 					row = pathList.get(listCount).xCoord;
 					col = pathList.get(listCount).yCoord;
-					drone.setPositionX(pathList.get(listCount).xCoord);
-					drone.setPositionY(pathList.get(listCount).yCoord);
+					drone.setPositionX(row);
+					drone.setPositionY(col);
 					
 					mapArray[col][row].add(drone.getDroneShape());
 					listCount++;
+					
 				}
 				arrest(drone);
 				drone.setOrder(2);
@@ -400,14 +398,13 @@ public class SimulationEnviroment extends JFrame {
 			else if(drone.getOrder() == 2){
 				//If a criminal is captured as part of the previous order, then return to base without intercepting other criminals, resume standard or modified patrol once reached.
 				int listCount = 0;
-				pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 3, 3);
+				pathList = pathfinder(row, col, 3, 3);
 				
 				while((!((drone.getPositionX() == 3) && (drone.getPositionY() == 3)))){
 					System.out.println(pathList.get(listCount).xCoord+" "+pathList.get(listCount).yCoord);
 					
 					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
-					
-					System.out.println(pathList.get(listCount).xCoord+ " "+pathList.get(listCount).yCoord );
+
 					drone.setPositionX(pathList.get(listCount).xCoord);
 					drone.setPositionY(pathList.get(listCount).yCoord);
 					
@@ -436,26 +433,26 @@ public class SimulationEnviroment extends JFrame {
 	//If there are multiple entities, then it will priorities based on a "detected-first" basis, and only go for that one.
 	//Sets drone orders to interception.
 	public void detect(Drone drone){
-			for(Criminal crim : criminalList){
-				int startPosX = (drone.getPositionX()-1 < 0) ?drone.getPositionX():drone.getPositionX()-1;
-				int startPosY = (drone.getPositionY()-1 < 0) ?drone.getPositionY():drone.getPositionY()-1;
-				int endPosX = (drone.getPositionX()+1 >11) ? drone.getPositionX():drone.getPositionX()+1;
-				int endPosY = (drone.getPositionY()+1 >11) ? drone.getPositionY():drone.getPositionY()+1;
+				int startPosX = (drone.getPositionX()-1 < 0) ?drone.getPositionX():drone.getPositionX()-2;
+				int startPosY = (drone.getPositionY()-1 < 0) ?drone.getPositionY():drone.getPositionY()-2;
+				int endPosX = (drone.getPositionX()+1 >11) ? drone.getPositionX():drone.getPositionX()+2;
+				int endPosY = (drone.getPositionY()+1 >11) ? drone.getPositionY():drone.getPositionY()+2;
 				
 				for(int y = startPosY;y<=endPosY;y++){
 					for(int x = startPosX;x<=endPosX;x++){
-						if((crim.getPositionY() == y && crim.getPositionX() == x)){
-							System.out.println();
-							System.out.println("! " + crim.getPositionY() + " " + crim.getPositionX());
-							crim.setTaggedBy(drone.getDroneDesignation());
-							
-							System.out.println(drone.getPositionY() + " " + drone.getPositionX());
-							drone.setOrder(1);
-
+						for(Criminal crim : criminalList){
+							if((crim.getPositionY() == y && crim.getPositionX() == x)){
+								System.out.println();
+								System.out.println("! " + crim.getPositionY() + " " + crim.getPositionX());
+								crim.setTaggedBy(drone.getDroneDesignation());
+								
+								System.out.println(drone.getPositionY() + " " + drone.getPositionX());
+								drone.setOrder(1);
+								break;
+							}
 						}
 					}
 				}
-			}
 		/*end of detect and arrest order*/
 	}
 	
@@ -475,12 +472,20 @@ public class SimulationEnviroment extends JFrame {
 	 * (never overestimates distance).
 	 * 
 	 * All tile cost and asociated calulations have a multiplier of 10 (Eg. moving to tile in next space is 10, not 1)
+	 * 
+	 * Code and concepts, borrowed and adapted from the following references:
+	 * http://software-talk.org/blog/2012/01/a-star-java/
+	 * http://www.thehelper.net/threads/c-java-what-are-the-requirements-for-implementing-an-a-star-algorithm.161267/
+	 * http://www.cokeandcode.com/main/tutorials/path-finding/
+	 * http://www.policyalmanac.org/games/aStarTutorial.htm
+	 * http://stackoverflow.com/questions/5601889/unable-to-implement-a-star-in-java
 	 */
 	public List<Node> pathfinder(int startX, int startY, int goalX, int goalY){
 		Set<Node> openList = new HashSet<Node>(); //List for nodes to analyse
 		Set<Node> closedList = new HashSet<Node>(); //Nodes already visited
 		Set<Node> adjList = new HashSet<Node>(); //Nodes adjacent to the current position
 		
+		//Set respective coordinates as nodes to manipulate.
 		Node start = nodes[startX][startY];
 		Node goal = nodes[goalX][goalY];
 		
@@ -491,13 +496,14 @@ public class SimulationEnviroment extends JFrame {
 		openList.add(start); //Add start node to openList
 		
 		while(true){
-			Node current = null;
+			Node current = null; //No current
 			
 			//No path found/Nothing to analyse
 			if(openList.size()==0){
 				break;
 			}
 			
+			//If a node in the openList is not a wall, and either null or greater than a node's total heuristic cost to the goal, make it the current node
 			for(Node node: openList){
 				if(current == null || (node.fCost < current.fCost) && (mapArrayPosition[node.xCoord][node.yCoord] == 0)){
 					current = node;
@@ -513,45 +519,38 @@ public class SimulationEnviroment extends JFrame {
 			openList.remove(current);
 			closedList.add(current);
 			
-			//For a 3x3 square centered around the current drone, return all valid, in-bounds nodes, excluding the central coordinate
+			//For directly adjacent nodes (tiles), add them to adjList for further processing in the algorithmn.
+			//Below is a series of multiconditional checks to see if the current location is at the "edge" of the map, set appropriate value if is/is not.
+			//Code adapted and referenced from here: http://stackoverflow.com/questions/22747109/avoid-out-of-bounds-exception-in-2d-array 
+			///Concept of conditional operators from here: http://www.tutorialspoint.com/java/java_basic_operators.htm
 			int startPosX = (current.xCoord-1 < 0) ?current.xCoord:current.xCoord-1;
 			int startPosY = (current.yCoord-1 < 0) ?current.yCoord:current.yCoord-1;
 			int endPosX = (current.xCoord+1 >11) ? current.xCoord:current.xCoord+1;
 			int endPosY = (current.yCoord+1 >11) ? current.yCoord:current.yCoord+1;
 			
-			for(int y = startPosY;y<=endPosY;y++){
-				for(int x = startPosX;x<=endPosX;x++){
-					
-					if((closedList.contains(nodes[x][y])!=true)){
-						adjList.add(nodes[x][y]);
-					}
-				}
-			}
-			
-			/*
-			for(Iterator<Node> iterator = adjList.iterator(); iterator.hasNext();){
-				Node adjFilter = iterator.next();
-				
-				if(mapArrayPosition[adjFilter.xCoord][adjFilter.yCoord] == 1){
-					iterator.remove();
-					adjList.remove(adjFilter);
-				}
-			}*/
+			//Add all squares directly adjacent to drone. Diagonals ignored because such movement is not desired.
+			adjList.add(nodes[current.xCoord][startPosY]);
+			adjList.add(nodes[current.xCoord][endPosY]);
+			adjList.add(nodes[startPosX][current.yCoord]);
+			adjList.add(nodes[endPosX][current.yCoord]);
 			
 			//System.out.println(adjList);
 			
+			//For adjacent nodes
 			for(Node neighbor: adjList){
 				if(neighbor == null){
 					continue;
-				}
+				} //Ignore and continue iterating is neighbor is null
 				
-				int nextG = current.gCost + neighbor.gCost;
+				int nextG = current.gCost + neighbor.gCost; //Get cost to next square
 				
+				//If the cost is less than a neighbor's cost, remove from both lists
 				if(nextG < neighbor.gCost){
 					openList.remove(neighbor);
 					closedList.remove(neighbor);
 				}
 				
+				//If in neither, set costs and add to openList
 				if(!openList.contains(neighbor) && !closedList.contains(neighbor)){
 					neighbor.gCost = nextG;
 					neighbor.hCost = manhattanDistance(neighbor, goal);
@@ -563,6 +562,7 @@ public class SimulationEnviroment extends JFrame {
 		}
 		
 		//Create a new node returnList, and trace the path back to start using the parents of each node from the goal.
+		//Changed to checking for if the path is at the start point, rather than if parent is null, since that causes memory leaks.
 		List<Node> returnList = new ArrayList<Node>();
 		Node current = goal; 
 		while(current != nodes[startX][startY]){
@@ -571,16 +571,13 @@ public class SimulationEnviroment extends JFrame {
 		}
 		returnList.add(start);
 		
-		/*for(int i = 0; i < returnList.size();i++){
-			System.out.println(returnList.get(i).yCoord +" "+ returnList.get(i).xCoord);
-		}*/
-		
-		Collections.reverse(returnList); //Reverse the order so the path is from drone to designated position
+		//Collections.reverse(returnList); //Reverse the order so the path is from drone to designated position
 		
 		return returnList;
 	}
 	
 	//Manhattan distance, calculation code takne from: http://stackoverflow.com/questions/8224470/calculating-manhattan-distance
+	//Takes both vertical (y) and horizontal (x) coordinates from two nodes.
 	public int manhattanDistance(Node node1, Node node2){
 		return Math.abs(node1.xCoord - node2.xCoord) + Math.abs(node1.yCoord - node2.yCoord);
 	}
