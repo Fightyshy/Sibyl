@@ -5,7 +5,7 @@ import javax.swing.JPanel;
 @SuppressWarnings("serial")
 class Criminal extends JPanel{
 	public int crimeCoefficient; //Abstract value of crime severity
-	public boolean isCaught; //If false, remains on map, if true after acknowledging forced deletion or capture, then vanishes
+	public int taggedBy;
 	public int positionX;
 	public int positionY;
 	public Tiles criminalShape = new Tiles(true, true, Color.blue, 24);
@@ -14,9 +14,9 @@ class Criminal extends JPanel{
 		
 	}
 	
-	public Criminal(int crimeCo, boolean caught, int posX, int posY, Tiles cs){
+	public Criminal(int crimeCo, int tag, int posX, int posY, Tiles cs){
 		crimeCoefficient = crimeCo;
-		isCaught = caught;
+		taggedBy = tag;
 		positionX = posX;
 		positionY = posY;
 		criminalShape = cs;
@@ -30,12 +30,12 @@ class Criminal extends JPanel{
 		return crimeCoefficient;
 	}
 	
-	public void setIsCaught(boolean caught){
-		isCaught = caught;
+	public void setTaggedBy(int tag){
+		taggedBy = tag;
 	}
 	
-	public boolean getIsCaught(){
-		return isCaught;
+	public int getTaggedBy(){
+		return taggedBy;
 	}
 	
 	public void setPositionX(int posX){

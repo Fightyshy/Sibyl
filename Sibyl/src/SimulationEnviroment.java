@@ -7,9 +7,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -38,8 +40,6 @@ public class SimulationEnviroment extends JFrame {
 	private JPanel panel;
 	
 	private Node[][] nodes;
-	
-	int order; //For determining action based on condition. Changes at the end of each function
 	
 	CentralCommand cCommand;
 	Drone drone;
@@ -113,27 +113,33 @@ public class SimulationEnviroment extends JFrame {
 	
 	//Mechanisms for Drones
 	public void droneEntity(){
-		drone = new Drone();
-		drone.setDroneDesignation(droneID++);
-		drone.SetDetectionRadius(3);
-		droneList.add(drone);
-		System.out.println(droneList.size());
-		drone.setOrder(0);
-		//In reverse order on 2D Array I.e. [y][x], sets spawn to CCommand's position
-		drone.setPositionX(cCommand.getPositionX());
-		drone.setPositionY(cCommand.getPositionY());
-		
-		System.out.println(drone.getPositionX()+" "+ drone.getPositionY());
-			if(gridCheck == true){
-			mapArray[drone.getPositionY()][drone.getPositionX()].add(drone.getDroneShape());
-			getContentPane().add(drone);
-			setVisible(true);
+		if(cCommandCheck==true){
+			drone = new Drone();
+			drone.SetDetectionRadius(3);
+			droneList.add(drone);
+			System.out.println(droneList.size());
+			drone.setOrder(0);
+			//In reverse order on 2D Array I.e. [y][x], sets spawn to CCommand's position
+			drone.setPositionX(cCommand.getPositionX());
+			drone.setPositionY(cCommand.getPositionY());
 			
-			}
-			else{
-				System.out.println("No");
-			}
-		//Apply the things here
+			drone.setDroneDesignation(droneID++);
+			
+			System.out.println(drone.getPositionX()+" "+ drone.getPositionY());
+				if(gridCheck == true){
+				mapArray[drone.getPositionY()][drone.getPositionX()].add(drone.getDroneShape());
+				getContentPane().add(drone);
+				setVisible(true);
+				
+				}
+				else{
+					System.out.println("No");
+				}
+			//Apply the things here
+		}
+		else{
+			System.out.println("No");
+		}
 	}
 	
 	public void removeDrone(Drone drone){
@@ -154,7 +160,6 @@ public class SimulationEnviroment extends JFrame {
 	public void criminalEntity(){
 		criminal = new Criminal();
 		criminalList.add(criminal);
-		criminal.setIsCaught(false);
 		//random map location
 		int randCrimPosX = randCrim.nextInt((11 - 0)) + 0;
 		int randCrimPosY = randCrim.nextInt((11 - 0)) + 0;
@@ -198,6 +203,8 @@ public class SimulationEnviroment extends JFrame {
 				}
 				break;
 			}
+		criminal.setTaggedBy(-1);
+		
 		}while(spawn == 1);
 	}
 	
@@ -288,8 +295,8 @@ public class SimulationEnviroment extends JFrame {
 			for(Drone drone: droneList){	
 				int row = drone.getPositionX();
 				int col = drone.getPositionY();
-				int targetX = 0;
-				int targetY = 0;
+				List<Node> pathList;
+				Criminal taggedCrim = new Criminal();
 				
 				/*"Arresting protocol. Iterates through criminalList to see if one of their coordinates matches the current location of a drone, and if so, deletes.
 				 * Should also take "crime-coefficient" from criminal and append to sectorList, which contains a total value of these and a associated point.
@@ -302,6 +309,9 @@ public class SimulationEnviroment extends JFrame {
 				 * Error definitation taken from: https://docs.oracle.com/javase/7/docs/api/java/util/ConcurrentModificationException.html
 				 */
 				//End of arresting protocol
+			
+				
+			//If drone currently has criminal arrested, 
 			if(drone.getHasCriminal() == true){
 				drone.setOrder(2);
 			}
@@ -358,92 +368,64 @@ public class SimulationEnviroment extends JFrame {
 				//Sets to return to home base, will always have "arrested" at the end of this order.
 				int listCount = 0;
 				//boolean arrived = false;
-				if(drone.getHasCriminal() == false){
-					List<Node> pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), crimCoords.xCoord, crimCoords.yCoord );
-					
-					/*for(Node path: pathList){
-						//System.out.println(path.xCoord+ " "+path.yCoord );
-						
-						mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
-						
-						System.out.println(path.xCoord+ " "+path.yCoord );
-						row = path.xCoord;
-						col = path.yCoord;
-						drone.setPositionX(path.xCoord);
-						drone.setPositionY(path.yCoord);
-						
-						mapArray[col][row].add(drone.getDroneShape());
-						arrest(drone);
-						detect(drone);
-					}*/
-					
-					while((!((drone.getPositionX() == crimCoords.xCoord) && (drone.getPositionY() == crimCoords.yCoord)))){
-						mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
-						
-						System.out.println(pathList.get(listCount).xCoord+ " "+pathList.get(listCount).yCoord );
-						drone.setPositionX(pathList.get(listCount).xCoord);
-						drone.setPositionY(pathList.get(listCount).yCoord);
-						
-						row = pathList.get(listCount).xCoord;
-						col = pathList.get(listCount).yCoord;
-						drone.setPositionX(pathList.get(listCount).xCoord);
-						drone.setPositionY(pathList.get(listCount).yCoord);
-						
-						mapArray[col][row].add(drone.getDroneShape());
-						listCount++;
-						arrest(drone);
-						//detect(drone);
+
+				for(Criminal crim: criminalList){
+					if(drone.getDroneDesignation() == crim.getTaggedBy()){
+						taggedCrim = crim;
+						break;
 					}
-					arrest(drone);
-					drone.setHasCriminal(true);
 				}
-				else{
-					List<Node> homePathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 3, 3);
-					
-					while((!((drone.getPositionX() == 3) && (drone.getPositionY() == 3)))){
-						mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
-						
-						System.out.println(homePathList.get(listCount).xCoord+ " "+homePathList.get(listCount).yCoord );
-						drone.setPositionX(homePathList.get(listCount).xCoord);
-						drone.setPositionY(homePathList.get(listCount).yCoord);
-						
-						row = homePathList.get(listCount).xCoord;
-						col = homePathList.get(listCount).yCoord;
-						drone.setPositionX(homePathList.get(listCount).xCoord);
-						drone.setPositionY(homePathList.get(listCount).yCoord);
-						
-						mapArray[col][row].add(drone.getDroneShape());
-						listCount++;
-						
-					}
-					drone.setHasCriminal(false);
-					drone.setOrder(0);
-				}
-			}
-			
-			
-			else if(drone.getOrder() == 2){
-				//If a criminal is captured as part of the previous order, then return to base without intercepting other criminals, resume standard or modified patrol once reached.
-				int listCount = 0;
-				List<Node> homePathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 3, 3);
 				
-				while((!((drone.getPositionX() == 3) && (drone.getPositionY() == 3)))){
+				pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), taggedCrim.getPositionX(), taggedCrim.getPositionY());
+				
+				while((!((drone.getPositionX() == taggedCrim.getPositionX()) && (drone.getPositionY() == taggedCrim.getPositionY())))){
 					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 					
-					System.out.println(homePathList.get(listCount).xCoord+ " "+homePathList.get(listCount).yCoord );
-					drone.setPositionX(homePathList.get(listCount).xCoord);
-					drone.setPositionY(homePathList.get(listCount).yCoord);
+					System.out.println(pathList.get(listCount).xCoord+ " "+pathList.get(listCount).yCoord );
+					drone.setPositionX(pathList.get(listCount).xCoord);
+					drone.setPositionY(pathList.get(listCount).yCoord);
 					
-					row = homePathList.get(listCount).xCoord;
-					col = homePathList.get(listCount).yCoord;
-					drone.setPositionX(homePathList.get(listCount).xCoord);
-					drone.setPositionY(homePathList.get(listCount).yCoord);
+					row = pathList.get(listCount).xCoord;
+					col = pathList.get(listCount).yCoord;
+					drone.setPositionX(pathList.get(listCount).xCoord);
+					drone.setPositionY(pathList.get(listCount).yCoord);
 					
 					mapArray[col][row].add(drone.getDroneShape());
 					listCount++;
-					drone.setHasCriminal(false);
-					drone.setOrder(0);
 				}
+				arrest(drone);
+				drone.setOrder(2);
+				//drone.setHasCriminal(true);
+			}
+			else if(drone.getOrder() == 2){
+				//If a criminal is captured as part of the previous order, then return to base without intercepting other criminals, resume standard or modified patrol once reached.
+				int listCount = 0;
+				pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 3, 3);
+				
+				while((!((drone.getPositionX() == 3) && (drone.getPositionY() == 3)))){
+					System.out.println(pathList.get(listCount).xCoord+" "+pathList.get(listCount).yCoord);
+					
+					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
+					
+					System.out.println(pathList.get(listCount).xCoord+ " "+pathList.get(listCount).yCoord );
+					drone.setPositionX(pathList.get(listCount).xCoord);
+					drone.setPositionY(pathList.get(listCount).yCoord);
+					
+					row = pathList.get(listCount).xCoord;
+					col = pathList.get(listCount).yCoord;
+					drone.setPositionX(pathList.get(listCount).xCoord);
+					drone.setPositionY(pathList.get(listCount).yCoord);
+					
+					mapArray[col][row].add(drone.getDroneShape());
+					listCount++;
+					
+				}
+				//drone.setHasCriminal(false);
+				
+				//mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
+				//mapArray[col][row].add(drone.getDroneShape());
+				
+				drone.setOrder(0);
 			}
 			}
 		}});
@@ -454,46 +436,38 @@ public class SimulationEnviroment extends JFrame {
 	//If there are multiple entities, then it will priorities based on a "detected-first" basis, and only go for that one.
 	//Sets drone orders to interception.
 	public void detect(Drone drone){
-		for(Criminal crim : criminalList){
-			int startPosX = (drone.getPositionX()-1 < 0) ?drone.getPositionX():drone.getPositionX()-1;
-			int startPosY = (drone.getPositionY()-1 < 0) ?drone.getPositionY():drone.getPositionY()-1;
-			int endPosX = (drone.getPositionX()+1 >11) ? drone.getPositionX():drone.getPositionX()+1;
-			int endPosY = (drone.getPositionY()+1 >11) ? drone.getPositionY():drone.getPositionY()+1;
-			
-			for(int y = startPosY;y<=endPosY;y++){
-				for(int x = startPosX;x<=endPosX;x++){
-					if((crim.getPositionY() == y && crim.getPositionX() == x)){
-						System.out.println();
-						System.out.println("! " + crim.getPositionY() + " " + crim.getPositionX());
-						crimCoords.xCoord = crim.getPositionX();
-						crimCoords.yCoord = crim.getPositionY();
-						
-						//droneCoords.setXCoord(drone.getPositionX());
-						//droneCoords.setYCoord(drone.getPositionY());
-						
-						System.out.println(drone.getPositionY() + " " + drone.getPositionX());
-						drone.setOrder(1);
+			for(Criminal crim : criminalList){
+				int startPosX = (drone.getPositionX()-1 < 0) ?drone.getPositionX():drone.getPositionX()-1;
+				int startPosY = (drone.getPositionY()-1 < 0) ?drone.getPositionY():drone.getPositionY()-1;
+				int endPosX = (drone.getPositionX()+1 >11) ? drone.getPositionX():drone.getPositionX()+1;
+				int endPosY = (drone.getPositionY()+1 >11) ? drone.getPositionY():drone.getPositionY()+1;
+				
+				for(int y = startPosY;y<=endPosY;y++){
+					for(int x = startPosX;x<=endPosX;x++){
+						if((crim.getPositionY() == y && crim.getPositionX() == x)){
+							System.out.println();
+							System.out.println("! " + crim.getPositionY() + " " + crim.getPositionX());
+							crim.setTaggedBy(drone.getDroneDesignation());
+							
+							System.out.println(drone.getPositionY() + " " + drone.getPositionX());
+							drone.setOrder(1);
+
+						}
 					}
 				}
 			}
-		}
 		/*end of detect and arrest order*/
 	}
 	
 	public void arrest(Drone drone){
 		for(Iterator<Criminal> iterator = criminalList.iterator(); iterator.hasNext();){
 			Criminal delCrim = iterator.next();
-				if(mapArray[drone.getPositionY()][drone.getPositionX()] == mapArray[delCrim.getPositionY()][delCrim.getPositionX()] ){
-					iterator.remove();
-					mapArray[delCrim.getPositionY()][delCrim.getPositionX()].remove(delCrim.getCriminalShape());
-					getContentPane().remove(delCrim);
-					drone.setHasCriminal(true);
-					//drone.setOrder(0);
-				}
-				else{
-					
-				}
+			if(mapArray[drone.getPositionY()][drone.getPositionX()] == mapArray[delCrim.getPositionY()][delCrim.getPositionX()] && drone.getDroneDesignation() == delCrim.getTaggedBy()){
+				iterator.remove();
+				mapArray[delCrim.getPositionY()][delCrim.getPositionX()].remove(delCrim.getCriminalShape());
+				getContentPane().remove(delCrim);
 			}
+		}
 	}
 	
 	/*Using A* Algorithmn to find shortest path to criminal, since detection radius and conditions may be changed, rather than a simpler
@@ -503,9 +477,9 @@ public class SimulationEnviroment extends JFrame {
 	 * All tile cost and asociated calulations have a multiplier of 10 (Eg. moving to tile in next space is 10, not 1)
 	 */
 	public List<Node> pathfinder(int startX, int startY, int goalX, int goalY){
-		ArrayList<Node> openList = new ArrayList<Node>(); //List for nodes to analyse
-		ArrayList<Node> closedList = new ArrayList<Node>(); //Nodes already visited
-		ArrayList<Node> adjList = new ArrayList<Node>(); //Nodes adjacent to the current position
+		Set<Node> openList = new HashSet<Node>(); //List for nodes to analyse
+		Set<Node> closedList = new HashSet<Node>(); //Nodes already visited
+		Set<Node> adjList = new HashSet<Node>(); //Nodes adjacent to the current position
 		
 		Node start = nodes[startX][startY];
 		Node goal = nodes[goalX][goalY];
@@ -525,7 +499,7 @@ public class SimulationEnviroment extends JFrame {
 			}
 			
 			for(Node node: openList){
-				if(current == null || node.fCost < current.fCost){
+				if(current == null || (node.fCost < current.fCost) && (mapArrayPosition[node.xCoord][node.yCoord] == 0)){
 					current = node;
 				}
 			}
@@ -539,7 +513,7 @@ public class SimulationEnviroment extends JFrame {
 			openList.remove(current);
 			closedList.add(current);
 			
-			//For a 3x3 square centered around the current node, return all valid, in-bounds nodes, excluding the central coordinate
+			//For a 3x3 square centered around the current drone, return all valid, in-bounds nodes, excluding the central coordinate
 			int startPosX = (current.xCoord-1 < 0) ?current.xCoord:current.xCoord-1;
 			int startPosY = (current.yCoord-1 < 0) ?current.yCoord:current.yCoord-1;
 			int endPosX = (current.xCoord+1 >11) ? current.xCoord:current.xCoord+1;
@@ -589,17 +563,17 @@ public class SimulationEnviroment extends JFrame {
 		}
 		
 		//Create a new node returnList, and trace the path back to start using the parents of each node from the goal.
-		ArrayList<Node> returnList = new ArrayList<Node>();
-		Node current = goal;
-		while(current.parent != null){
+		List<Node> returnList = new ArrayList<Node>();
+		Node current = goal; 
+		while(current != nodes[startX][startY]){
 			returnList.add(current);
 			current = current.parent;
 		}
 		returnList.add(start);
 		
-		for(int i = 0; i < returnList.size();i++){
+		/*for(int i = 0; i < returnList.size();i++){
 			System.out.println(returnList.get(i).yCoord +" "+ returnList.get(i).xCoord);
-		}
+		}*/
 		
 		Collections.reverse(returnList); //Reverse the order so the path is from drone to designated position
 		
