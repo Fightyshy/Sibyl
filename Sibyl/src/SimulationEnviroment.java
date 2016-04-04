@@ -6,6 +6,7 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,6 +32,7 @@ public class SimulationEnviroment extends JFrame {
 	private boolean cCommandCheck = false; //Checks if central command is already up
 	private boolean executeCheck = false; //check if main execution block already activated.
 	private Random randCrim = new Random();
+	private Random randCrimCo = new Random();
 	
 	public ArrayList<Drone> droneList = new ArrayList<Drone>();
 	public ArrayList<Criminal> criminalList = new ArrayList<Criminal>();
@@ -47,6 +49,8 @@ public class SimulationEnviroment extends JFrame {
 	
 	public Coordinate droneCoords = new Coordinate();
 	public Coordinate crimCoords = new Coordinate();
+	
+	Integer[] crimeCo = {0, 0, 0, 0}; //Crime coefficient values for 4 sectors, divided into 6x6
 	
 	//Note: Add arrays here to keep track of Drones and Criminals on the grid
 	
@@ -160,8 +164,9 @@ public class SimulationEnviroment extends JFrame {
 	public void criminalEntity(){
 		criminal = new Criminal();
 		//random map location
-		int randCrimPosX = randCrim.nextInt((11 - 0)) + 0;
-		int randCrimPosY = randCrim.nextInt((11 - 0)) + 0;
+		int randCrimPosX = randCrim.nextInt((11 - 0)+1) + 0;
+		int randCrimPosY = randCrim.nextInt((11 - 0)+1) + 0;
+		int randCrimeCo = (randCrimCo.nextInt((10 - 1)) + 1)+1;
 		
 		//In reverse order on 2D Array I.e. [y][x], sets spawn to CCommand's position
 		
@@ -171,15 +176,11 @@ public class SimulationEnviroment extends JFrame {
 			
 			criminal.setPositionX(randCrimPosX);
 			criminal.setPositionY(randCrimPosY);
-			criminal.setTaggedBy(-1);
+			criminal.setTaggedBy(droneID++);
 			spawn = mapArrayPosition[criminal.getPositionY()][criminal.getPositionX()];
-		
-			//Check for duplicate criminal on square not needed - Multiple crimes/severity can occur on same square.
 			
-		if(spawn == 1){
+			if(spawn == 1){
 				System.out.println("No");
-				System.out.println(criminal.getPositionX());
-				System.out.println(criminal.getPositionY());
 				
 				//ask for new values and set again until condition met
 				randCrimPosX = randCrim.nextInt((11 - 0)) + 0;
@@ -187,22 +188,25 @@ public class SimulationEnviroment extends JFrame {
 				
 				criminal.setPositionX(randCrimPosX);
 				criminal.setPositionY(randCrimPosY);
-			}
-		else{
-			if(gridCheck == true){
-			mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal.getCriminalShape());
-			mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal);
-			getContentPane().add(criminal);
-			criminalList.add(criminal);
-			setVisible(true);
+				criminal.setCrimeCoefficient(randCrimeCo);
 			}
 			else{
-				System.out.println("No");
-				System.out.println(criminal.getPositionX());
-				System.out.println(criminal.getPositionY());
+				if(gridCheck == true){
+					mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal.getCriminalShape());
+					mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal);
+					criminal.setCrimeCoefficient(randCrimeCo);
+					getContentPane().add(criminal);
+					criminalList.add(criminal);
+					setVisible(true);
+					}
+					else{
+						System.out.println("No");
+					}
+					break;	
 			}
-			break;
-		}
+			//Check for duplicate criminal on square not needed - Multiple crimes/severity can occur on same square.
+			
+			
 		
 		}while(spawn == 1);
 	}
@@ -279,7 +283,7 @@ public class SimulationEnviroment extends JFrame {
 				criminalEntity();
 			}
 		});spawnCriminal.start();
-		
+				
 		//New timer with actionListener to execute methods
 		final Timer timer = new Timer(1000, new ActionListener(){
 		
@@ -294,7 +298,7 @@ public class SimulationEnviroment extends JFrame {
 			for(Drone drone: droneList){	
 				int row = drone.getPositionX();
 				int col = drone.getPositionY();
-				List<Node> pathList;
+				List<Node> pathList = new ArrayList<Node>();
 				Criminal taggedCrim = new Criminal();
 				
 				/*"Arresting protocol. Iterates through criminalList to see if one of their coordinates matches the current location of a drone, and if so, deletes.
@@ -310,6 +314,30 @@ public class SimulationEnviroment extends JFrame {
 				//End of arresting protocol
 			
 				
+			//Prior to activating, checks if the crime coefficient for ALL sectors is higher than 20, then starts a repeating interval every 10 seconds that makes drones follow another order rather than standard
+			//patrol
+				boolean isTiming = false;
+			if((int) Collections.max(Arrays.asList(crimeCo)) > 20){
+				System.out.println("Starting timer...");
+				isTiming = true;
+			}
+			
+			if(isTiming = true){
+				Timer assumeControl = new Timer(10000, new ActionListener(){
+					public void actionPerformed(ActionEvent control){
+						for(int i = 0; i < droneList.size();i++){
+							Random randDrone = new Random();
+							System.out.println("done");
+							int randDroneChoosen = randDrone.nextInt((droneList.size()-0)+1)+0;
+							
+							if(randDroneChoosen>-1 && randDroneChoosen< droneList.size()){
+								droneList.get(randDroneChoosen).setOrder(3);
+							}
+						}
+					}
+				});	assumeControl.start();
+			}
+			
 			//If drone currently has criminal arrested, 
 			if(drone.getHasCriminal() == true){
 				drone.setOrder(2);
@@ -362,11 +390,62 @@ public class SimulationEnviroment extends JFrame {
 	                    detect(drone);
 					}while(!moved);
 			}
+			else if(drone.getOrder() == 3){
+				int xLoc = 0;
+				int yLoc = 0;
+				int listCount = 0;
+				
+				for(int i = 0; i < 4; i++){
+					System.out.println(crimeCo[i]);
+					//Code below used from: http://www.java2s.com/Tutorial/Java/0140__Collections/Minimumandmaximumnumberinarray.htm
+					int maxCrimeCo = (int) Collections.max(Arrays.asList(crimeCo[i]));
+					
+					if(maxCrimeCo == crimeCo[0]){
+						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), cCommand.getPositionX(), cCommand.getPositionY());
+						xLoc = 3;
+						yLoc = 3;
+						break;
+					}
+					else if(maxCrimeCo == crimeCo[1]){
+						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 9, 2);
+						xLoc = 9;
+						yLoc = 8;
+						break;
+					}
+					else if(maxCrimeCo == crimeCo[2]){
+						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 9, 3);
+						xLoc = 9;
+						yLoc = 3;
+						break;
+					}
+					else if(maxCrimeCo == crimeCo[3]){
+						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 9, 8);
+						xLoc = 4;
+						yLoc = 9;
+						break;
+					}
+				}
+					while(!((drone.getPositionX() == xLoc) && (drone.getPositionY() == yLoc))){
+						mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
+						
+						System.out.println(pathList.get(listCount).xCoord+ " "+pathList.get(listCount).yCoord );
+						//drone.setPositionX(pathList.get(listCount).xCoord);
+						//drone.setPositionY(pathList.get(listCount).yCoord);
+						
+						row = pathList.get(listCount).xCoord;
+						col = pathList.get(listCount).yCoord;
+						drone.setPositionX(row);
+						drone.setPositionY(col);
+						
+						mapArray[col][row].add(drone.getDroneShape());
+						listCount++;
+					}
+					drone.setOrder(0);
+			}
 			else if(drone.getOrder() == 1){
 				//Execute path searching to the first-detected criminal, resume standard if absolutely no more criminals in detection radius
 				//Sets to return to home base, will always have "arrested" at the end of this order.
 				int listCount = 0;
-				boolean moved = false;
 
 				for(Criminal crim: criminalList){
 					if(drone.getDroneDesignation() == crim.getTaggedBy()){
@@ -404,14 +483,11 @@ public class SimulationEnviroment extends JFrame {
 					System.out.println(pathList.get(listCount).xCoord+" "+pathList.get(listCount).yCoord);
 					
 					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
-
-					drone.setPositionX(pathList.get(listCount).xCoord);
-					drone.setPositionY(pathList.get(listCount).yCoord);
 					
 					row = pathList.get(listCount).xCoord;
 					col = pathList.get(listCount).yCoord;
-					drone.setPositionX(pathList.get(listCount).xCoord);
-					drone.setPositionY(pathList.get(listCount).yCoord);
+					drone.setPositionX(row);
+					drone.setPositionY(col);
 					
 					mapArray[col][row].add(drone.getDroneShape());
 					listCount++;
@@ -429,14 +505,15 @@ public class SimulationEnviroment extends JFrame {
 		timer.start();
 	}
 	
-	//Detection method, gets a drone's current location and checks a 5x5 square centered around the drone. If a criminal is spotted, it's location is recorded.
+	//Detection method, gets a drone's current location and checks a 3x3 square centered around the drone. If a criminal is spotted, it's location is recorded.
 	//If there are multiple entities, then it will priorities based on a "detected-first" basis, and only go for that one.
 	//Sets drone orders to interception.
+	//Detection radius is fixed like this because of map size. This is idealy scalable according to map size, but has the current size for this simulation.
 	public void detect(Drone drone){
-				int startPosX = (drone.getPositionX()-1 < 0) ?drone.getPositionX():drone.getPositionX()-2;
-				int startPosY = (drone.getPositionY()-1 < 0) ?drone.getPositionY():drone.getPositionY()-2;
-				int endPosX = (drone.getPositionX()+1 >11) ? drone.getPositionX():drone.getPositionX()+2;
-				int endPosY = (drone.getPositionY()+1 >11) ? drone.getPositionY():drone.getPositionY()+2;
+				int startPosX = (drone.getPositionX()-1 < 0) ?drone.getPositionX():drone.getPositionX()-1;
+				int startPosY = (drone.getPositionY()-1 < 0) ?drone.getPositionY():drone.getPositionY()-1;
+				int endPosX = (drone.getPositionX()+1 >11) ? drone.getPositionX():drone.getPositionX()+1;
+				int endPosY = (drone.getPositionY()+1 >11) ? drone.getPositionY():drone.getPositionY()+1;
 				
 				for(int y = startPosY;y<=endPosY;y++){
 					for(int x = startPosX;x<=endPosX;x++){
@@ -460,9 +537,27 @@ public class SimulationEnviroment extends JFrame {
 		for(Iterator<Criminal> iterator = criminalList.iterator(); iterator.hasNext();){
 			Criminal delCrim = iterator.next();
 			if(mapArray[drone.getPositionY()][drone.getPositionX()] == mapArray[delCrim.getPositionY()][delCrim.getPositionX()] && drone.getDroneDesignation() == delCrim.getTaggedBy()){
+				
+				//If statements here to which location get crime coefficent to add.
+				if((delCrim.getPositionX() < 6 && delCrim.getPositionY() < 6) && drone.getDroneDesignation() == delCrim.getTaggedBy()){
+					crimeCo[0] = delCrim.getCrimeCoefficient() + crimeCo[0];
+				}
+				else if((delCrim.getPositionX() > 5 && delCrim.getPositionY() > 5) && drone.getDroneDesignation() == delCrim.getTaggedBy()){
+					crimeCo[3] = delCrim.getCrimeCoefficient() + crimeCo[3];
+				}
+				else if((delCrim.getPositionX() > 5 && delCrim.getPositionY() < 6) && drone.getDroneDesignation() == delCrim.getTaggedBy()){
+					crimeCo[1] = delCrim.getCrimeCoefficient() + crimeCo[1];
+				}
+				else if((delCrim.getPositionX() < 6 && delCrim.getPositionY() > 5) && drone.getDroneDesignation() == delCrim.getTaggedBy()){
+					crimeCo[2] = delCrim.getCrimeCoefficient() + crimeCo[2];
+				}
+				
 				iterator.remove();
 				mapArray[delCrim.getPositionY()][delCrim.getPositionX()].remove(delCrim.getCriminalShape());
 				getContentPane().remove(delCrim);
+				for(int i = 0; i < 4; i++){
+					System.out.println("Sector" + i+": "+crimeCo[i]);
+				}
 			}
 		}
 	}
@@ -571,7 +666,7 @@ public class SimulationEnviroment extends JFrame {
 		}
 		returnList.add(start);
 		
-		//Collections.reverse(returnList); //Reverse the order so the path is from drone to designated position
+		Collections.reverse(returnList); //Reverse the order so the path is from drone to designated position
 		
 		return returnList;
 	}
