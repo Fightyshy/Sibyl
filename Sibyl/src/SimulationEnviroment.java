@@ -43,6 +43,8 @@ public class SimulationEnviroment extends JFrame {
 	
 	private Node[][] nodes;
 	
+	boolean isTiming = false;
+	
 	CentralCommand cCommand;
 	Drone drone;
 	Criminal criminal;
@@ -120,6 +122,7 @@ public class SimulationEnviroment extends JFrame {
 		if(cCommandCheck==true){
 			drone = new Drone();
 			drone.SetDetectionRadius(3);
+			drone.setDroneDesignation(droneID++);
 			droneList.add(drone);
 			System.out.println(droneList.size());
 			drone.setOrder(0);
@@ -176,7 +179,7 @@ public class SimulationEnviroment extends JFrame {
 			
 			criminal.setPositionX(randCrimPosX);
 			criminal.setPositionY(randCrimPosY);
-			criminal.setTaggedBy(droneID++);
+			criminal.setTaggedBy(-1);
 			spawn = mapArrayPosition[criminal.getPositionY()][criminal.getPositionX()];
 			
 			if(spawn == 1){
@@ -283,9 +286,34 @@ public class SimulationEnviroment extends JFrame {
 				criminalEntity();
 			}
 		});spawnCriminal.start();
+		
+		//Prior to activating, checks if the crime coefficient for ALL sectors is higher than 20, then starts a repeating interval every 10 seconds that makes drones follow another order rather than standard
+		//patrol
+			Timer assumeControl = new Timer(10000, new ActionListener(){
+				public void actionPerformed(ActionEvent control){
+					Random randDrone = new Random();
+					System.out.println("done");
+					//If when this triggers, reset all criminal designations to default.
+					for(Criminal crimReset: criminalList){
+						crimReset.setTaggedBy(-1);
+					}
+					//If the max value crime coefficient is higher than 20, select a random drone to go to that sector.
+					if((int) Collections.max(Arrays.asList(crimeCo)) > 20){
+						int randDroneChoosen = randDrone.nextInt((droneList.size()-0)+1)+0;
+						
+						if(randDroneChoosen>-1 && randDroneChoosen< droneList.size()){
+							droneList.get(randDroneChoosen).setOrder(3);
+						}
+					}
+					else{
+						System.out.println("Not yet");
+					}
+				}
+			});
+			assumeControl.start();
 				
 		//New timer with actionListener to execute methods
-		final Timer timer = new Timer(1000, new ActionListener(){
+		final Timer mainTimer = new Timer(1000, new ActionListener(){
 		
 			//Execute method and refresh gui for every one second on the time (1000ms)
 			public void actionPerformed(ActionEvent movement){	
@@ -313,31 +341,6 @@ public class SimulationEnviroment extends JFrame {
 				 */
 				//End of arresting protocol
 			
-				
-			//Prior to activating, checks if the crime coefficient for ALL sectors is higher than 20, then starts a repeating interval every 10 seconds that makes drones follow another order rather than standard
-			//patrol
-				boolean isTiming = false;
-			if((int) Collections.max(Arrays.asList(crimeCo)) > 20){
-				System.out.println("Starting timer...");
-				isTiming = true;
-			}
-			
-			if(isTiming = true){
-				Timer assumeControl = new Timer(10000, new ActionListener(){
-					public void actionPerformed(ActionEvent control){
-						for(int i = 0; i < droneList.size();i++){
-							Random randDrone = new Random();
-							System.out.println("done");
-							int randDroneChoosen = randDrone.nextInt((droneList.size()-0)+1)+0;
-							
-							if(randDroneChoosen>-1 && randDroneChoosen< droneList.size()){
-								droneList.get(randDroneChoosen).setOrder(3);
-							}
-						}
-					}
-				});	assumeControl.start();
-			}
-			
 			//If drone currently has criminal arrested, 
 			if(drone.getHasCriminal() == true){
 				drone.setOrder(2);
@@ -346,6 +349,7 @@ public class SimulationEnviroment extends JFrame {
 			if(drone.getOrder() == 0){
 				/*Loose patrol method
 				 * Moves the drone around in a random, erratic order, default setting for when orders 1 (detect and arrest), and 2 (move to "more dangerous" sector point)
+				 * Code referenced from: http://stackoverflow.com/questions/21032140/moving-jlabel-to-a-different-place-in-the-jpanel-pacman-like-game
 				 */
 				boolean moved = false;
 					do{
@@ -395,11 +399,13 @@ public class SimulationEnviroment extends JFrame {
 				int yLoc = 0;
 				int listCount = 0;
 				
+				int maxCrimeCo = (int) Collections.max(Arrays.asList(crimeCo)); //Get the first, maximum crime coefficient value based on all sectors.
+				
 				for(int i = 0; i < 4; i++){
 					System.out.println(crimeCo[i]);
 					//Code below used from: http://www.java2s.com/Tutorial/Java/0140__Collections/Minimumandmaximumnumberinarray.htm
-					int maxCrimeCo = (int) Collections.max(Arrays.asList(crimeCo[i]));
 					
+					//For each possible sector, check if it's the highest value, then set the pathfinder to the a location within the sector
 					if(maxCrimeCo == crimeCo[0]){
 						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), cCommand.getPositionX(), cCommand.getPositionY());
 						xLoc = 3;
@@ -409,26 +415,26 @@ public class SimulationEnviroment extends JFrame {
 					else if(maxCrimeCo == crimeCo[1]){
 						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 9, 2);
 						xLoc = 9;
-						yLoc = 8;
+						yLoc = 2;
 						break;
 					}
 					else if(maxCrimeCo == crimeCo[2]){
-						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 9, 3);
-						xLoc = 9;
-						yLoc = 3;
+						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 3, 9);
+						xLoc = 3;
+						yLoc = 9;
 						break;
 					}
 					else if(maxCrimeCo == crimeCo[3]){
 						pathList = pathfinder(drone.getPositionX(), drone.getPositionY(), 9, 8);
-						xLoc = 4;
-						yLoc = 9;
+						xLoc = 9;
+						yLoc = 8;
 						break;
 					}
 				}
 					while(!((drone.getPositionX() == xLoc) && (drone.getPositionY() == yLoc))){
 						mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 						
-						System.out.println(pathList.get(listCount).xCoord+ " "+pathList.get(listCount).yCoord );
+						System.out.println(pathList.get(listCount).yCoord+ " "+pathList.get(listCount).xCoord );
 						//drone.setPositionX(pathList.get(listCount).xCoord);
 						//drone.setPositionY(pathList.get(listCount).yCoord);
 						
@@ -446,6 +452,7 @@ public class SimulationEnviroment extends JFrame {
 				//Execute path searching to the first-detected criminal, resume standard if absolutely no more criminals in detection radius
 				//Sets to return to home base, will always have "arrested" at the end of this order.
 				int listCount = 0;
+				ArrayList<Node> directionList = new ArrayList<Node>();
 
 				for(Criminal crim: criminalList){
 					if(drone.getDroneDesignation() == crim.getTaggedBy()){
@@ -454,21 +461,23 @@ public class SimulationEnviroment extends JFrame {
 				}
 				
 				pathList = pathfinder(row, col, taggedCrim.getPositionX(), taggedCrim.getPositionY());
-				while((!((drone.getPositionX() == taggedCrim.getPositionX()) && (drone.getPositionY() == taggedCrim.getPositionY())))){
+				while(pathList.isEmpty() != true){
 					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 					
-					System.out.println(pathList.get(listCount).xCoord+ " "+pathList.get(listCount).yCoord );
+					directionList.add(pathList.get(0));
+					System.out.println(pathList.get(listCount).yCoord+ " "+pathList.get(listCount).xCoord );
 					//drone.setPositionX(pathList.get(listCount).xCoord);
 					//drone.setPositionY(pathList.get(listCount).yCoord);
 					
-					row = pathList.get(listCount).xCoord;
-					col = pathList.get(listCount).yCoord;
+					row = directionList.get(0).xCoord;
+					col = directionList.get(0).yCoord;
 					drone.setPositionX(row);
 					drone.setPositionY(col);
 					
 					mapArray[col][row].add(drone.getDroneShape());
-					listCount++;
-					
+					//listCount++;
+					pathList.remove(0);
+					directionList.remove(0);
 				}
 				arrest(drone);
 				drone.setOrder(2);
@@ -480,7 +489,7 @@ public class SimulationEnviroment extends JFrame {
 				pathList = pathfinder(row, col, 3, 3);
 				
 				while((!((drone.getPositionX() == 3) && (drone.getPositionY() == 3)))){
-					System.out.println(pathList.get(listCount).xCoord+" "+pathList.get(listCount).yCoord);
+					System.out.println(pathList.get(listCount).yCoord+" "+pathList.get(listCount).xCoord);
 					
 					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 					
@@ -502,7 +511,7 @@ public class SimulationEnviroment extends JFrame {
 			}
 			}
 		}});
-		timer.start();
+		mainTimer.start();
 	}
 	
 	//Detection method, gets a drone's current location and checks a 3x3 square centered around the drone. If a criminal is spotted, it's location is recorded.
@@ -518,7 +527,7 @@ public class SimulationEnviroment extends JFrame {
 				for(int y = startPosY;y<=endPosY;y++){
 					for(int x = startPosX;x<=endPosX;x++){
 						for(Criminal crim : criminalList){
-							if((crim.getPositionY() == y && crim.getPositionX() == x)){
+							if((crim.getPositionY() == y && crim.getPositionX() == x) && crim.getTaggedBy() != drone.getDroneDesignation() && crim.getTaggedBy() == -1){
 								System.out.println();
 								System.out.println("! " + crim.getPositionY() + " " + crim.getPositionX());
 								crim.setTaggedBy(drone.getDroneDesignation());
@@ -624,10 +633,10 @@ public class SimulationEnviroment extends JFrame {
 			int endPosY = (current.yCoord+1 >11) ? current.yCoord:current.yCoord+1;
 			
 			//Add all squares directly adjacent to drone. Diagonals ignored because such movement is not desired.
-			adjList.add(nodes[current.xCoord][startPosY]);
-			adjList.add(nodes[current.xCoord][endPosY]);
-			adjList.add(nodes[startPosX][current.yCoord]);
-			adjList.add(nodes[endPosX][current.yCoord]);
+				adjList.add(nodes[current.xCoord][startPosY]);
+				adjList.add(nodes[current.xCoord][endPosY]);
+				adjList.add(nodes[startPosX][current.yCoord]);
+				adjList.add(nodes[endPosX][current.yCoord]);
 			
 			//System.out.println(adjList);
 			
@@ -635,18 +644,18 @@ public class SimulationEnviroment extends JFrame {
 			for(Node neighbor: adjList){
 				if(neighbor == null){
 					continue;
-				} //Ignore and continue iterating is neighbor is null
+				} //Ignore and continue iterating if neighbor is null
 				
 				int nextG = current.gCost + neighbor.gCost; //Get cost to next square
 				
 				//If the cost is less than a neighbor's cost, remove from both lists
-				if(nextG < neighbor.gCost){
+				if(nextG < neighbor.gCost && mapArrayPosition[neighbor.yCoord][neighbor.xCoord] == 0){
 					openList.remove(neighbor);
 					closedList.remove(neighbor);
 				}
 				
 				//If in neither, set costs and add to openList
-				if(!openList.contains(neighbor) && !closedList.contains(neighbor)){
+				if(!openList.contains(neighbor) && !closedList.contains(neighbor) && mapArrayPosition[neighbor.yCoord][neighbor.xCoord] == 0){
 					neighbor.gCost = nextG;
 					neighbor.hCost = manhattanDistance(neighbor, goal);
 					neighbor.fCost = neighbor.gCost + neighbor.hCost;
