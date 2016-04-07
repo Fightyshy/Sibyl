@@ -13,54 +13,24 @@ class Tiles extends JPanel{
 	public static final Color CCommand = Color.green;
 	*/
 	
-	public boolean isPassable;
-	public boolean isEntity;
-	public Color tileColor;
-	public int size;
+	public Color tileColour;
 	
 	public Tiles(){
 		
 	}
 	
-	public Tiles(boolean isPass, boolean isEnt, Color tc, int sz){
-		isPassable = isPass;
-		isEntity = isEnt;
-		tileColor = tc;
-		size = sz;
+	public Tiles(Color tc){
+		tileColour = tc;
 		setBackground(tc);
 		setBorder(BorderFactory.createLineBorder(Color.black));
 		//setPreferredSize(new Dimension(70, 70));
 	}
 	
-	public void setIsPassable (boolean isPass){
-		isPassable = isPass;
+	public void setTileColour (Color tc){
+		tileColour = tc;
 	}
 	
-	public boolean getIsPassable(){
-		return isPassable;
-	}
-	
-	public void setIsEntity (boolean isEnt){
-		isEntity = isEnt;
-	}
-	
-	public boolean getIsEntity(){
-		return isEntity;
-	}
-	
-	public void setTileColor (Color tc){
-		tileColor = tc;
-	}
-	
-	public Color getTileColor(){
-		return tileColor;
-	}
-	
-	public void setSize(int sz){
-		size = sz;
-	}
-	
-	public int getSize(int sz){
-		return size;
+	public Color getTileColour(){
+		return tileColour;
 	}
 }

@@ -8,7 +8,7 @@ class Criminal extends JPanel{
 	public int taggedBy;
 	public int positionX;
 	public int positionY;
-	public Tiles criminalShape = new Tiles(true, true, Color.blue, 24);
+	public Tiles criminalShape = new Tiles(Color.blue);
 	
 	public Criminal(){
 		
@@ -55,10 +55,7 @@ class Criminal extends JPanel{
 	}
 	
 	public void setCriminalShape(Tiles cs){
-		criminalShape.setTileColor(Color.blue);
-		criminalShape.setIsPassable(true);
-		criminalShape.setIsEntity(true);
-		criminalShape.setSize(24);
+		criminalShape.setTileColour(Color.blue);
 		criminalShape = cs;
 	}
 	

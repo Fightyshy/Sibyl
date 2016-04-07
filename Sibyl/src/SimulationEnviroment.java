@@ -31,17 +31,17 @@ public class SimulationEnviroment extends JFrame {
 	private boolean gridCheck = false; //checks if grid is active.
 	private boolean cCommandCheck = false; //Checks if central command is already up
 	private boolean executeCheck = false; //check if main execution block already activated.
-	private Random randCrim = new Random();
-	private Random randCrimCo = new Random();
+	private Random randCrim = new Random(); //Random criminal position
+	private Random randCrimCo = new Random(); //Random criminal crime coefficient
 	
-	public ArrayList<Drone> droneList = new ArrayList<Drone>();
-	public ArrayList<Criminal> criminalList = new ArrayList<Criminal>();
+	public ArrayList<Drone> droneList = new ArrayList<Drone>(); //List of currently active drones
+	public ArrayList<Criminal> criminalList = new ArrayList<Criminal>(); //List of currently active criminals
 	
-	int droneID = 0;
+	int droneID = 0; //Value to be assigned for droneDesignation
 	
 	private JPanel panel;
 	
-	private Node[][] nodes;
+	private Node[][] nodes; //Grid of nodes
 	
 	boolean isTiming = false;
 	
@@ -52,7 +52,7 @@ public class SimulationEnviroment extends JFrame {
 	public Coordinate droneCoords = new Coordinate();
 	public Coordinate crimCoords = new Coordinate();
 	
-	Integer[] crimeCo = {0, 0, 0, 0}; //Crime coefficient values for 4 sectors, divided into 6x6
+	public Integer[] crimeCo = {0, 0, 0, 0}; //Crime coefficient values for 4 sectors, divided into 6x6
 	
 	//Note: Add arrays here to keep track of Drones and Criminals on the grid
 	
@@ -102,7 +102,7 @@ public class SimulationEnviroment extends JFrame {
 		int spawn = mapArrayPosition[cCommand.getPositionY()][cCommand.getPositionX()];
 		
 		if(spawn == 1 || cCommandCheck == true){
-			System.out.println("No");
+			System.out.println("Error - Already generated");
 		}
 		else{
 			if(gridCheck == true){
@@ -112,7 +112,7 @@ public class SimulationEnviroment extends JFrame {
 				cCommandCheck = true;
 			}
 			else{
-				System.out.println("No");
+				System.out.println("Error - Grid not generated");
 			}
 		}
 	}
@@ -121,7 +121,6 @@ public class SimulationEnviroment extends JFrame {
 	public void droneEntity(){
 		if(cCommandCheck==true){
 			drone = new Drone();
-			drone.SetDetectionRadius(3);
 			drone.setDroneDesignation(droneID++);
 			droneList.add(drone);
 			System.out.println(droneList.size());
@@ -140,12 +139,12 @@ public class SimulationEnviroment extends JFrame {
 				
 				}
 				else{
-					System.out.println("No");
+					System.out.println("Error - Central Command not generated");
 				}
 			//Apply the things here
 		}
 		else{
-			System.out.println("No");
+			System.out.println("Error - Grid not generated");
 		}
 	}
 	
@@ -183,7 +182,7 @@ public class SimulationEnviroment extends JFrame {
 			spawn = mapArrayPosition[criminal.getPositionY()][criminal.getPositionX()];
 			
 			if(spawn == 1){
-				System.out.println("No");
+				System.out.println("Error - invalid position");
 				
 				//ask for new values and set again until condition met
 				randCrimPosX = randCrim.nextInt((11 - 0)) + 0;
@@ -203,7 +202,7 @@ public class SimulationEnviroment extends JFrame {
 					setVisible(true);
 					}
 					else{
-						System.out.println("No");
+						System.out.println("Error - Grid not generated");
 					}
 					break;	
 			}
@@ -241,8 +240,8 @@ public class SimulationEnviroment extends JFrame {
 			for(int i = 0; i < mapWidth; i++){
 				for(int j = 0; j < mapHeight; j++){
 					//12x12 (144) "buildings" and "roads" created here
-					Tiles building = new Tiles(false, false, new Color(139,69,19), 70); //variable Building of custom class Tile, "obstacle"
-					Tiles road = new Tiles(true, false, Color.gray, 70); //variable Building of custom class Tile, "pathway"
+					Tiles building = new Tiles(new Color(139,69,19)); //variable Building of custom class Tile, "obstacle"
+					Tiles road = new Tiles(Color.gray); //variable Building of custom class Tile, "pathway"
 					Tiles tileTypes[] = {road, building};
 					
 					//Checks tile at mapArrayPosition[i][j] and applies correct tile to mapArray.
@@ -298,6 +297,7 @@ public class SimulationEnviroment extends JFrame {
 						crimReset.setTaggedBy(-1);
 					}
 					//If the max value crime coefficient is higher than 20, select a random drone to go to that sector.
+					//Max value getter referenced from: http://www.java2s.com/Tutorial/Java/0140__Collections/Minimumandmaximumnumberinarray.htm
 					if((int) Collections.max(Arrays.asList(crimeCo)) > 20){
 						int randDroneChoosen = randDrone.nextInt((droneList.size()-0)+1)+0;
 						
@@ -452,7 +452,6 @@ public class SimulationEnviroment extends JFrame {
 				//Execute path searching to the first-detected criminal, resume standard if absolutely no more criminals in detection radius
 				//Sets to return to home base, will always have "arrested" at the end of this order.
 				int listCount = 0;
-				ArrayList<Node> directionList = new ArrayList<Node>();
 
 				for(Criminal crim: criminalList){
 					if(drone.getDroneDesignation() == crim.getTaggedBy()){
@@ -461,23 +460,17 @@ public class SimulationEnviroment extends JFrame {
 				}
 				
 				pathList = pathfinder(row, col, taggedCrim.getPositionX(), taggedCrim.getPositionY());
-				while(pathList.isEmpty() != true){
+				while((!((drone.getPositionX() == taggedCrim.getPositionX()) && (drone.getPositionY() == taggedCrim.getPositionY())))){
 					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 					
-					directionList.add(pathList.get(0));
 					System.out.println(pathList.get(listCount).yCoord+ " "+pathList.get(listCount).xCoord );
-					//drone.setPositionX(pathList.get(listCount).xCoord);
-					//drone.setPositionY(pathList.get(listCount).yCoord);
-					
-					row = directionList.get(0).xCoord;
-					col = directionList.get(0).yCoord;
+					row = pathList.get(listCount).xCoord;
+					col = pathList.get(listCount).yCoord;
 					drone.setPositionX(row);
 					drone.setPositionY(col);
 					
 					mapArray[col][row].add(drone.getDroneShape());
-					//listCount++;
-					pathList.remove(0);
-					directionList.remove(0);
+					listCount++;
 				}
 				arrest(drone);
 				drone.setOrder(2);
@@ -648,13 +641,13 @@ public class SimulationEnviroment extends JFrame {
 				
 				int nextG = current.gCost + neighbor.gCost; //Get cost to next square
 				
-				//If the cost is less than a neighbor's cost, remove from both lists
+				//If the cost is less than a neighbor's cost, remove from both lists, check if terrain in valid to pass through
 				if(nextG < neighbor.gCost && mapArrayPosition[neighbor.yCoord][neighbor.xCoord] == 0){
 					openList.remove(neighbor);
 					closedList.remove(neighbor);
 				}
 				
-				//If in neither, set costs and add to openList
+				//If in neither, set costs and add to openList, check if terrain in valid to pass through
 				if(!openList.contains(neighbor) && !closedList.contains(neighbor) && mapArrayPosition[neighbor.yCoord][neighbor.xCoord] == 0){
 					neighbor.gCost = nextG;
 					neighbor.hCost = manhattanDistance(neighbor, goal);
@@ -719,6 +712,7 @@ public class SimulationEnviroment extends JFrame {
 		JMenuItem exitMenuItem = new JMenuItem("Exit");
 		exitMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
+				System.out.println("Closing program...");
 				System.exit(0);
 			}
 		});
@@ -756,7 +750,7 @@ public class SimulationEnviroment extends JFrame {
 		menu.add(enviro);
 		
 		//Drones SubItems
-		//SubItem "Help" - Resets program to tabula rasa
+		//SubItem "Add Drone" - Adds a single drone to grid
 		JMenuItem addDroneMenuItem = new JMenuItem("Add Drone");
 		addDroneMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
@@ -764,7 +758,7 @@ public class SimulationEnviroment extends JFrame {
 				};
 		});
 		
-		//SubItem "Exit" - Terminates Program
+		//SubItem "Remove Drone" - Removes drone at droneList index zero from grid
 		JMenuItem removeDroneMenuItem = new JMenuItem("Remove Drone");
 		removeDroneMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
@@ -776,8 +770,8 @@ public class SimulationEnviroment extends JFrame {
 		drones.add(removeDroneMenuItem);
 		menu.add(drones);
 		
-		//File SubItems
-		//SubItem "Help" - Resets program to tabula rasa
+		//Criminal SubItems
+		//SubItem "Add Criminal" - Adds a criminal to the grid
 		JMenuItem addCrimMenuItem = new JMenuItem("Add Criminal");
 		addCrimMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
@@ -785,7 +779,7 @@ public class SimulationEnviroment extends JFrame {
 			}
 		});
 		
-		//SubItem "Exit" - Terminates Program
+		//SubItem "Remove Criminal" - Removes criminal at criminalList index zero from grid
 		JMenuItem removeCrimMenuItem = new JMenuItem("Remove Criminal");
 		removeCrimMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
@@ -797,8 +791,8 @@ public class SimulationEnviroment extends JFrame {
 		criminals.add(removeCrimMenuItem);
 		menu.add(criminals);
 		
-		//File SubItems
-		//SubItem "Help" - Resets program to tabula rasa
+		//Central Command SubItem
+		//SubItem " Add Central Command - Adds Central Command to the grid
 		JMenuItem addCCommandMenuItem = new JMenuItem("Add Central Command");
 		addCCommandMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent event) {
@@ -806,16 +800,7 @@ public class SimulationEnviroment extends JFrame {
 			}
 		});
 		
-		//SubItem "Exit" - Terminates Program
-		JMenuItem removeCCommandMenuItem = new JMenuItem("Remove Central Command");
-		removeCCommandMenuItem.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				
-			}
-		});
-		
 		cCommand.add(addCCommandMenuItem);
-		cCommand.add(removeCCommandMenuItem);
 		menu.add(cCommand);
 		
 		setJMenuBar(menu);

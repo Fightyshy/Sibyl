@@ -7,7 +7,7 @@ class CentralCommand extends JPanel{
 	
 	public int positionX;
 	public int positionY;
-	public Tiles cCommandShape = new Tiles(true, true, Color.green, 24);
+	public Tiles cCommandShape = new Tiles(Color.green);
 	
 	public CentralCommand(){
 		
@@ -36,9 +36,7 @@ class CentralCommand extends JPanel{
 	}
 	
 	public void setCCommandShape(Tiles ds){
-		cCommandShape.setTileColor(Color.green);
-		cCommandShape.setIsPassable(true);
-		cCommandShape.setIsEntity(true);
+		cCommandShape.setTileColour(Color.green);
 		cCommandShape = ds;
 	}
 	
