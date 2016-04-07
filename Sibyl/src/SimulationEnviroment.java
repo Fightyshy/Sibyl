@@ -39,20 +39,16 @@ public class SimulationEnviroment extends JFrame {
 	
 	int droneID = 0; //Value to be assigned for droneDesignation
 	
-	private JPanel panel;
+	private JPanel panel; //New JPanel
 	
 	private Node[][] nodes; //Grid of nodes
 	
-	boolean isTiming = false;
+	//Initialise the objects below
+	public CentralCommand cCommand;
+	public Drone drone;
+	public Criminal criminal;
 	
-	CentralCommand cCommand;
-	Drone drone;
-	Criminal criminal;
-	
-	public Coordinate droneCoords = new Coordinate();
-	public Coordinate crimCoords = new Coordinate();
-	
-	public Integer[] crimeCo = {0, 0, 0, 0}; //Crime coefficient values for 4 sectors, divided into 6x6
+	public Integer[] crimeCo = {0, 0, 0, 0}; //Crime coefficient values for 4 sectors, divided into 6x6 "sectors". "Integer" instead of "int" to use "Collections" library to get highest crime coefficient
 	
 	//Note: Add arrays here to keep track of Drones and Criminals on the grid
 	
@@ -82,8 +78,8 @@ public class SimulationEnviroment extends JFrame {
 	}
 	
 	private void initUI(){
-		
-		MenuBar();
+		//initialise specific GUI dimensions
+		menuBar();
 		setTitle("'Sibyl' - Intelligent Policing System - Dissertation");
 		setSize(1024, 768);
 		setLocationRelativeTo(null);
@@ -94,17 +90,21 @@ public class SimulationEnviroment extends JFrame {
 	
 	//Mechanisms for CCommand
 	public void cCommandEntity(){
-		cCommand = new CentralCommand();
+		cCommand = new CentralCommand(); //new entity
 		
+		//Fixed deploy to (3,3)
 		cCommand.setPositionX(3);
 		cCommand.setPositionY(3);
 		
+		//Check if location is valid, if "1", then does not allow.
 		int spawn = mapArrayPosition[cCommand.getPositionY()][cCommand.getPositionX()];
 		
+		//Only one central command can be active at a time. This check for that and if square is valid terrain.
 		if(spawn == 1 || cCommandCheck == true){
 			System.out.println("Error - Already generated");
 		}
 		else{
+			//If grid is generated, then add and make visible.
 			if(gridCheck == true){
 				mapArray[cCommand.getPositionY()][cCommand.getPositionX()].add(cCommand.getCCommandShape());//.getCCommandShape());
 				getContentPane().add(cCommand);
@@ -119,18 +119,18 @@ public class SimulationEnviroment extends JFrame {
 	
 	//Mechanisms for Drones
 	public void droneEntity(){
+		//Check if central command is up. Drones will not spawn if not active.
 		if(cCommandCheck==true){
 			drone = new Drone();
-			drone.setDroneDesignation(droneID++);
-			droneList.add(drone);
+			drone.setDroneDesignation(droneID++); //Incremental droneDesignation based on how many time this command had been triggered
+			droneList.add(drone); //Add to list of active drones
 			System.out.println(droneList.size());
-			drone.setOrder(0);
+			drone.setOrder(0); //Set to default patrol
 			//In reverse order on 2D Array I.e. [y][x], sets spawn to CCommand's position
 			drone.setPositionX(cCommand.getPositionX());
 			drone.setPositionY(cCommand.getPositionY());
 			
-			drone.setDroneDesignation(droneID++);
-			
+			//If true, then add and make visible
 			System.out.println(drone.getPositionX()+" "+ drone.getPositionY());
 				if(gridCheck == true){
 				mapArray[drone.getPositionY()][drone.getPositionX()].add(drone.getDroneShape());
@@ -149,15 +149,17 @@ public class SimulationEnviroment extends JFrame {
 	}
 	
 	public void removeDrone(Drone drone){
+		//Check drone list to see if empty, if not, then delete first available drone.
 		if(droneList.size() != 0){
-			drone = droneList.get(0);
-			droneList.remove(0);
-			mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
-			getContentPane().remove(drone);
+			drone = droneList.get(0); //get drone from list
+			droneList.remove(0); //remove first available drone from list
+			mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape()); //remove drone at position
+			getContentPane().remove(drone); //remove drone from content pane
 		}
 		else{
 			System.out.println("Nothing to delete");
 		}
+		//refresh GUI
 		panel.revalidate();
 		panel.repaint();
 	}
@@ -168,6 +170,8 @@ public class SimulationEnviroment extends JFrame {
 		//random map location
 		int randCrimPosX = randCrim.nextInt((11 - 0)+1) + 0;
 		int randCrimPosY = randCrim.nextInt((11 - 0)+1) + 0;
+		
+		//random crime coefficient
 		int randCrimeCo = (randCrimCo.nextInt((10 - 1)) + 1)+1;
 		
 		//In reverse order on 2D Array I.e. [y][x], sets spawn to CCommand's position
@@ -176,11 +180,13 @@ public class SimulationEnviroment extends JFrame {
 		
 		do{
 			
+			//set position and tag value to -1.
 			criminal.setPositionX(randCrimPosX);
 			criminal.setPositionY(randCrimPosY);
 			criminal.setTaggedBy(-1);
-			spawn = mapArrayPosition[criminal.getPositionY()][criminal.getPositionX()];
 			
+			spawn = mapArrayPosition[criminal.getPositionY()][criminal.getPositionX()];
+			//check if tile is valid
 			if(spawn == 1){
 				System.out.println("Error - invalid position");
 				
@@ -193,12 +199,13 @@ public class SimulationEnviroment extends JFrame {
 				criminal.setCrimeCoefficient(randCrimeCo);
 			}
 			else{
+				//Add 
 				if(gridCheck == true){
+					//Add criminal to position and make visible
 					mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal.getCriminalShape());
-					mapArray[criminal.getPositionY()][criminal.getPositionX()].add(criminal);
 					criminal.setCrimeCoefficient(randCrimeCo);
 					getContentPane().add(criminal);
-					criminalList.add(criminal);
+					criminalList.add(criminal); //Add to active criminalList
 					setVisible(true);
 					}
 					else{
@@ -213,6 +220,7 @@ public class SimulationEnviroment extends JFrame {
 		}while(spawn == 1);
 	}
 	
+	//Same as removing an active Drone, except using the criminalList
 	public void removeCriminal(Criminal criminal){
 		if(criminalList.size() != 0){
 			criminal = criminalList.get(0);
@@ -323,23 +331,12 @@ public class SimulationEnviroment extends JFrame {
 			}
 			
 			public void move(Component obj){
+				//Perform for each active drone
 			for(Drone drone: droneList){	
-				int row = drone.getPositionX();
-				int col = drone.getPositionY();
-				List<Node> pathList = new ArrayList<Node>();
-				Criminal taggedCrim = new Criminal();
-				
-				/*"Arresting protocol. Iterates through criminalList to see if one of their coordinates matches the current location of a drone, and if so, deletes.
-				 * Should also take "crime-coefficient" from criminal and append to sectorList, which contains a total value of these and a associated point.
-				 * 
-				 * Because of ConcurrentModificationException (I.E. using the same "thread" to add(because of CriminalEntity() a
-				 * random criminal every five seconds, usage of an iterator manage the thread to allow removing here has been used.
-				 * 
-				 * Code taken and adapted from:
-				 * http://stackoverflow.com/questions/223918/iterating-through-a-list-avoiding-concurrentmodificationexception-when-removing
-				 * Error definitation taken from: https://docs.oracle.com/javase/7/docs/api/java/util/ConcurrentModificationException.html
-				 */
-				//End of arresting protocol
+				int row = drone.getPositionX(); //X coordinate position
+				int col = drone.getPositionY(); //Y coordinate position
+				List<Node> pathList = new ArrayList<Node>(); //ArrayList containing coordinates to paths
+				Criminal taggedCrim = new Criminal(); //Criminal object that is the currently tagged criminal for one drone.
 			
 			//If drone currently has criminal arrested, 
 			if(drone.getHasCriminal() == true){
@@ -353,13 +350,15 @@ public class SimulationEnviroment extends JFrame {
 				 */
 				boolean moved = false;
 					do{
-						int direction = (int) (Math.round(Math.random() * 3));
+						int direction = (int) (Math.round(Math.random() * 3)); //Random direction
+						
+						//Set current value to variable for manipulating
 						int nextRow = row;
 						int nextCol = col;
 						
 						mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
-						//mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone);
 						
+						//Switch to choose which direction
 	                    switch (direction) {
 	                    case 0:
 	                        nextRow--;
@@ -385,7 +384,6 @@ public class SimulationEnviroment extends JFrame {
 	                    if(row != -1 || row != 12 || col != -1 || col != 12){
 		                    drone.setPositionX(row);
 		                    drone.setPositionY(col);
-		                    //mapArray[nextCol][nextRow].add(drone);
 		                    mapArray[col][row].add(drone.getDroneShape());
 		                    }
 	                    else{
@@ -435,8 +433,6 @@ public class SimulationEnviroment extends JFrame {
 						mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 						
 						System.out.println(pathList.get(listCount).yCoord+ " "+pathList.get(listCount).xCoord );
-						//drone.setPositionX(pathList.get(listCount).xCoord);
-						//drone.setPositionY(pathList.get(listCount).yCoord);
 						
 						row = pathList.get(listCount).xCoord;
 						col = pathList.get(listCount).yCoord;
@@ -453,13 +449,16 @@ public class SimulationEnviroment extends JFrame {
 				//Sets to return to home base, will always have "arrested" at the end of this order.
 				int listCount = 0;
 
+				//Set the drone's current acquisition as taggedCrim
 				for(Criminal crim: criminalList){
 					if(drone.getDroneDesignation() == crim.getTaggedBy()){
 						taggedCrim = crim;
 					}
 				}
 				
-				pathList = pathfinder(row, col, taggedCrim.getPositionX(), taggedCrim.getPositionY());
+				pathList = pathfinder(row, col, taggedCrim.getPositionX(), taggedCrim.getPositionY()); //Establish path
+				
+				//Execute while pathList is not empty, increment a listCount that goes through pathList and mores drone to end destination
 				while((!((drone.getPositionX() == taggedCrim.getPositionX()) && (drone.getPositionY() == taggedCrim.getPositionY())))){
 					mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
 					
@@ -472,15 +471,15 @@ public class SimulationEnviroment extends JFrame {
 					mapArray[col][row].add(drone.getDroneShape());
 					listCount++;
 				}
-				arrest(drone);
-				drone.setOrder(2);
-				//drone.setHasCriminal(true);
+				arrest(drone); //execute arrest
+				drone.setHasCriminal(true);//execute recall
 			}
 			else if(drone.getOrder() == 2){
 				//If a criminal is captured as part of the previous order, then return to base without intercepting other criminals, resume standard or modified patrol once reached.
 				int listCount = 0;
 				pathList = pathfinder(row, col, 3, 3);
 				
+				//pathList and while loop is same in function as above, only routing back to home base.
 				while((!((drone.getPositionX() == 3) && (drone.getPositionY() == 3)))){
 					System.out.println(pathList.get(listCount).yCoord+" "+pathList.get(listCount).xCoord);
 					
@@ -495,16 +494,12 @@ public class SimulationEnviroment extends JFrame {
 					listCount++;
 					
 				}
-				//drone.setHasCriminal(false);
-				
-				//mapArray[drone.getPositionY()][drone.getPositionX()].remove(drone.getDroneShape());
-				//mapArray[col][row].add(drone.getDroneShape());
-				
-				drone.setOrder(0);
+				drone.setHasCriminal(false); //"Release" criminal at "central command"				
+				drone.setOrder(0); //Resume patrol
 			}
 			}
 		}});
-		mainTimer.start();
+		mainTimer.start(); //Start timer
 	}
 	
 	//Detection method, gets a drone's current location and checks a 3x3 square centered around the drone. If a criminal is spotted, it's location is recorded.
@@ -534,6 +529,17 @@ public class SimulationEnviroment extends JFrame {
 				}
 		/*end of detect and arrest order*/
 	}
+	
+	/*"Arresting protocol. Iterates through criminalList to see if one of their coordinates matches the current location of a drone, and if so, deletes.
+	 * Should also take "crime-coefficient" from criminal and append to sectorList, which contains a total value of these and a associated point.
+	 * 
+	 * Because of ConcurrentModificationException (I.E. using the same "thread" to add(because of CriminalEntity() a
+	 * random criminal every five seconds, usage of an iterator manage the thread to allow removing here has been used.
+	 * 
+	 * Code taken and adapted from:
+	 * http://stackoverflow.com/questions/223918/iterating-through-a-list-avoiding-concurrentmodificationexception-when-removing
+	 * Error definitation taken from: https://docs.oracle.com/javase/7/docs/api/java/util/ConcurrentModificationException.html
+	 */
 	
 	public void arrest(Drone drone){
 		for(Iterator<Criminal> iterator = criminalList.iterator(); iterator.hasNext();){
@@ -600,7 +606,7 @@ public class SimulationEnviroment extends JFrame {
 				break;
 			}
 			
-			//If a node in the openList is not a wall, and either null or greater than a node's total heuristic cost to the goal, make it the current node
+			//If a node in the openList is not a wall, and either null or greater than a node's total heuristic cost to the goal, make it the current node, also check if passable terrain
 			for(Node node: openList){
 				if(current == null || (node.fCost < current.fCost) && (mapArrayPosition[node.xCoord][node.yCoord] == 0)){
 					current = node;
@@ -682,7 +688,7 @@ public class SimulationEnviroment extends JFrame {
 	/*Menu bar used for activating methods to operate simulation. GUI code for menu bar taken from:
 	 * http://zetcode.com/tutorials/javaswingtutorial/menusandtoolbars/
 	 */
-	private void MenuBar() {
+	private void menuBar() {
 		//Toolbar
 		JMenuBar menu = new JMenuBar();
 		
